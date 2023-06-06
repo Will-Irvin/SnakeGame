@@ -102,6 +102,40 @@ void SnakeGame::handleEvent(SDL_Event e) {
 	}
 }
 
+void SnakeGame::render() {
+	if (_playing && _renderer != NULL) {
+		// Rectangle used to render to different portions of the screen
+		SDL_Rect currSection = {0, 0, _windowWidth / _nCols, _windowHeight / _nRows};
+		for (int r = 0; r < _nRows; r++) {
+			int offset = r * _nCols;
+			for (int c = 0; c < _nCols; c++) {
+				// Draw square depending on what the space is
+				switch (*(_grid + offset + c)) {
+					case APPLE: // Red for apple
+						SDL_SetRenderDrawColor(_renderer, 0xff, 0, 0, 0xff);
+						break;
+					case BODY:
+					case HEAD: // Green for body / head
+						SDL_SetRenderDrawColor(_renderer, 0, 0xff, 0, 0xff);
+						break;
+					case BLANK: // Black for other spaces
+						SDL_SetRenderDrawColor(_renderer, 0, 0, 0, 0xff);
+						break;
+				}	
+				SDL_RenderFillRect(_renderer, &currSection);
+
+				// Draw gray outline
+				SDL_SetRenderDrawColor(_renderer, 128, 128, 128, 0xff);
+				SDL_RenderDrawRect(_renderer, &currSection);
+
+				currSection.x += currSection.w; // Go to next column
+			}
+			// Go to next row
+			currSection.x = 0;
+			currSection.y += currSection.h;
+		}			
+	}
+}
 /**
  * Move the body of the snake based on the current direction
  * Adjust the grid, score, queue, and other feature appropriately
@@ -176,7 +210,7 @@ bool SnakeGame::move() {
  *				 no space to place an apple.
  */
 bool SnakeGame::placeApple() {
-	if (_freeCells.empty() || !_playing) {
+	if (_freeCells.empty()) {
 		return false;
 	}
 

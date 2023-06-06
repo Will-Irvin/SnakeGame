@@ -5,7 +5,7 @@
 #include "SnakeGame.hh"
 
 #define INIT_SCREEN_DIMENSION (800)
-#define INIT_TIME_DELAY (400)
+#define INIT_TIME_DELAY (200)
 
 // Initialize SDL and its data structures
 bool init(SDL_Window**, SDL_Renderer**);
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 	SDL_Event e;
 	Uint64 timeDelay = INIT_TIME_DELAY;
 	while (!quit) {
-		Uint64 startTicks = SDL_GetTicks64();
+		int startTicks = SDL_GetTicks64();
 		while (SDL_PollEvent(&e)) {
 			if (e.type == SDL_QUIT) {
 				quit = true;
@@ -73,9 +73,12 @@ int main(int argc, char* argv[]) {
 		snakeGame.render();
 
 		SDL_RenderPresent(renderer);
-		Uint64 finishTicks = SDL_GetTicks64() - startTicks;
-		if (snakeGame.isPlaying() && finishTicks < timeDelay) {
-			SDL_Delay(finishTicks);
+		int finishTime = SDL_GetTicks64() - startTicks;
+		if (finishTime < 0) continue;
+
+		int sleepTime = timeDelay - finishTime;
+		if (snakeGame.isPlaying() && sleepTime > 0) {
+			SDL_Delay(sleepTime);
 		}
 	}
 	closeSDL(window, renderer);
