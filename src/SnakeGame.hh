@@ -23,9 +23,13 @@ class SnakeGame {
 		void reset();
 		void handleEvent(SDL_Event);
 		bool move();
+		bool placeApple();
+		void addFreeSpace(int, int);
+		void deleteFreeSpace(int, int);
 
 		// Getters
 		bool isPlaying();
+		int getScore();
 
 		// Methods for testing
 		void print();
@@ -45,7 +49,8 @@ class SnakeGame {
 		// easily adjust as it continues to move
 		std::queue< std::pair<int, int> > _path;
 
-		// Need structure to keep track of free cells
+		// Keep track of the options for free cells to randomly select
+		std::vector<int> _freeCells;
 
 		// Keep track of the snakes current direction
 		Direction _direction;

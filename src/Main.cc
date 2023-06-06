@@ -4,6 +4,8 @@
 
 #include "SnakeGame.hh"
 
+#define INIT_SCREEN_DIMENSION (800)
+
 // Initialize SDL and its data structures
 bool init();
 

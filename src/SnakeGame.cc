@@ -37,14 +37,19 @@ void SnakeGame::init(int nRows, int nCols) {
 
 	// Set up grid for the start of the game
 	for (int r = 0; r < _nRows; r++) {
+		int offset = r * _nCols;
 		for (int c = 0; c < _nCols; c++) {
-			setCell(r, c, BLANK);
+			*(_grid + offset + c) = BLANK;
+			_freeCells.push_back(offset + c);
 		}
 	}
 	setCell(_currLoc.first, _currLoc.second, HEAD);
+	deleteFreeSpace(_currLoc.first, _currLoc.second);
 	_path.push(_currLoc);
 
 	// Set first apple
+	bool firstApple = placeApple();
+	assert(firstApple);
 
 
 	_score = 1;
@@ -58,6 +63,7 @@ void SnakeGame::init(int nRows, int nCols) {
 void SnakeGame::reset() {
 	if (_grid != NULL) {
 		free(_grid);
+		_freeCells.clear();
 		_grid = NULL;
 		_nRows = 0;
 		_nCols = 0;
@@ -114,21 +120,66 @@ bool SnakeGame::move() {
 		std::pair<int, int> lastLoc = _path.front();
 		_path.pop();
 		setCell(lastLoc.first, lastLoc.second, BLANK);
+
+		// Add newly free space to selection for placing an apple
+		addFreeSpace(lastLoc.first, lastLoc.second);
+
+		// Remove new space from selection for placing an apple
+		deleteFreeSpace(_currLoc.first, _currLoc.second);
 	} else if (currSpace == APPLE) { // Increase score/length of snake
 		_score++;
+		if (!placeApple()) { // Place new apple, quit if an apple can't be placed
+			_playing = false;
+			return false;
+		}
 	}
 
 	_path.push(_currLoc);
 	setCell(_currLoc.first, _currLoc.second, HEAD);
 
-	// Set new apple location
-
 	return true;
 }
 
+/**
+ * Place an apple at a randomly selected blank space
+ * @return true if an apple could be placed successfully and false if there is
+ *				 no space to place an apple.
+ */
+bool SnakeGame::placeApple() {
+	if (_freeCells.empty()) {
+		return false;
+	}
+
+	int index = rand() % _freeCells.size();
+	*(_grid + _freeCells[index]) = APPLE;
+	_freeCells.erase(_freeCells.begin() + index);
+	return true;
+}
+
+// Add an offset indicated by the row and column number to the freeCells array
+void SnakeGame::addFreeSpace(int r, int c) {
+	_freeCells.push_back(r * _nCols + c);
+}
+
+// Remove the offset indicated by the row and column number from the vector
+void SnakeGame::deleteFreeSpace(int r, int c) {
+	int offset = r * _nCols + c;
+	for (size_t i = 0; i < _freeCells.size(); i++) {
+		if (_freeCells[i] == offset) {
+			_freeCells.erase(_freeCells.begin() + i);
+			break;
+		}
+	}
+}
+
 // Getters
+
 bool SnakeGame::isPlaying() {
 	return _playing;
+}
+
+int SnakeGame::getScore() {
+	return _score;
 }
 
 /**
