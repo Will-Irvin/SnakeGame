@@ -18,15 +18,13 @@ enum Direction {
 
 class SnakeGame {
 	public:
-		SnakeGame();
-		void init(int, int);
+		SnakeGame(SDL_Renderer* = NULL);
+		void init(int, int, int, int);
 		void reset();
 		void handleEvent(SDL_Event);
+		void render();
 		bool move();
-		bool placeApple();
-		void addFreeSpace(int, int);
-		void deleteFreeSpace(int, int);
-
+		
 		// Getters
 		bool isPlaying();
 		int getScore();
@@ -38,9 +36,16 @@ class SnakeGame {
 	private:
 		// Store what is going on at each cell of the grid (apple, blank, etc.)
 		Spaces* _grid;
+
+		// SDL renderer used to display the game
+		SDL_Renderer* _renderer;
+
 		// Dimensions of the grid
 		int _nRows;
 		int _nCols;
+		// Dimensions of the window
+		int _windowWidth;
+		int _windowHeight;
 
 		// Current location in the grid
 		std::pair<int, int> _currLoc;
@@ -58,6 +63,12 @@ class SnakeGame {
 		int _score; // Also serves as length of snake
 
 		bool _playing; // Whether the game has started/finished
+		
+
+		// Helper methods that should only be used while the game is being played
+		bool placeApple();
+		void addFreeSpace(int, int);
+		void deleteFreeSpace(int, int);
 
 		// Helper methods to access the grid
 		inline Spaces getCell(int, int);

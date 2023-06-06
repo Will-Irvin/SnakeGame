@@ -9,15 +9,19 @@
 #include "SnakeGame.hh"
 
 // Initialize variables
-SnakeGame::SnakeGame() {
+SnakeGame::SnakeGame(SDL_Renderer* renderer) {
 	_grid = NULL;
 	_nRows = 0;
 	_nCols = 0;
+	_windowWidth = 0;
+	_windowHeight = 0;
 	_currLoc = std::pair(-1, -1);
 	_direction = NONE;
 
 	_score = -1;
 	_playing = false;
+
+	_renderer = renderer;
 }
 
 /**
@@ -26,11 +30,13 @@ SnakeGame::SnakeGame() {
  * @param nRows: number of rows in the grid of the new game
  * @param nCols: number of columns in the grid of the new game
  */
-void SnakeGame::init(int nRows, int nCols) {
+void SnakeGame::init(int nRows, int nCols, int width, int height) {
 	reset();
 	// Initialize grid, set current location
 	_nRows = nRows;
 	_nCols = nCols;
+	_windowWidth = width;
+	_windowHeight = height;
 	_grid = (Spaces *) malloc(_nRows * _nCols * sizeof(Spaces));
 	_currLoc.first = _nRows / 2;
 	_currLoc.second = _nCols / 2;
@@ -67,8 +73,32 @@ void SnakeGame::reset() {
 		_grid = NULL;
 		_nRows = 0;
 		_nCols = 0;
+		_windowWidth = 0;
+		_windowHeight = 0;
 		_currLoc = std::pair(-1, -1);
 		_score = -1;
+	}
+}
+
+/**
+ * Change the direction the snake is moving based on keyboard input
+ * @param e The event being processed
+ */
+void SnakeGame::handleEvent(SDL_Event e) {
+	// Only handle events if the game is happening, and on the first key press
+	if (_playing && e.type == SDL_KEYDOWN && e.key.repeat == 0) {
+		SDL_Keycode key	= e.key.keysym.sym;
+		// Set direction depending on the key (wasd or arrows)
+		// Do not allow direction to move direction backwards (left to right)
+		if ((key == SDLK_UP || key == SDLK_w) && _direction != DOWN) {
+			_direction = UP;
+		} else if ((key == SDLK_DOWN || key == SDLK_s) && _direction != UP) {
+			_direction = DOWN;
+		} else if ((key == SDLK_LEFT || key == SDLK_a) && _direction != RIGHT) {
+			_direction = LEFT;
+		} else if ((key == SDLK_RIGHT || key == SDLK_d) && _direction != LEFT) {
+			_direction = RIGHT;
+		}
 	}
 }
 
@@ -146,7 +176,7 @@ bool SnakeGame::move() {
  *				 no space to place an apple.
  */
 bool SnakeGame::placeApple() {
-	if (_freeCells.empty()) {
+	if (_freeCells.empty() || !_playing) {
 		return false;
 	}
 
