@@ -51,7 +51,6 @@ void SnakeGame::init(int nRows, int nCols, int width, int height) {
 	}
 	setCell(_currLoc.first, _currLoc.second, HEAD);
 	deleteFreeSpace(_currLoc.first, _currLoc.second);
-	_path.push(_currLoc);
 
 	// Set first apple
 	bool firstApple = placeApple();
@@ -89,14 +88,22 @@ void SnakeGame::handleEvent(SDL_Event e) {
 	if (_playing && e.type == SDL_KEYDOWN && e.key.repeat == 0) {
 		SDL_Keycode key	= e.key.keysym.sym;
 		// Set direction depending on the key (wasd or arrows)
-		// Do not allow direction to move direction backwards (left to right)
-		if ((key == SDLK_UP || key == SDLK_w) && _direction != DOWN) {
+		// Do not allow to move back into itself
+		if ((key == SDLK_UP || key == SDLK_w) &&
+				(_path.empty() ||
+				!coordsEqual(std::pair(_currLoc.first - 1, _currLoc.second), _path.back()))) {
 			_direction = UP;
-		} else if ((key == SDLK_DOWN || key == SDLK_s) && _direction != UP) {
+		} else if ((key == SDLK_DOWN || key == SDLK_s) &&
+							 (_path.empty() ||
+							 !coordsEqual(std::pair(_currLoc.first + 1, _currLoc.second), _path.back()))) {
 			_direction = DOWN;
-		} else if ((key == SDLK_LEFT || key == SDLK_a) && _direction != RIGHT) {
+		} else if ((key == SDLK_LEFT || key == SDLK_a) &&
+							 (_path.empty() ||
+							 !coordsEqual(std::pair(_currLoc.first, _currLoc.second - 1), _path.back()))) {
 			_direction = LEFT;
-		} else if ((key == SDLK_RIGHT || key == SDLK_d) && _direction != LEFT) {
+		} else if ((key == SDLK_RIGHT || key == SDLK_d) &&
+							 (_path.empty() ||
+							 !coordsEqual(std::pair(_currLoc.first, _currLoc.second + 1), _path.back()))) {
 			_direction = RIGHT;
 		}
 	}
@@ -150,6 +157,7 @@ bool SnakeGame::move() {
 	// Adjust position of head
 	if (_direction != NONE) {
 		setCell(_currLoc.first, _currLoc.second, BODY);
+		_path.push(_currLoc);
 	}
 	switch (_direction) {
 		case UP:
@@ -198,7 +206,6 @@ bool SnakeGame::move() {
 		}
 	}
 
-	_path.push(_currLoc);
 	setCell(_currLoc.first, _currLoc.second, HEAD);
 
 	return true;
@@ -234,6 +241,12 @@ void SnakeGame::deleteFreeSpace(int r, int c) {
 			break;
 		}
 	}
+}
+
+// Check if two sets of coordinates are the same
+inline bool SnakeGame::coordsEqual(std::pair<int, int> coord1,
+																	 std::pair<int, int> coord2) {
+	return coord1.first == coord2.first && coord1.second == coord2.second;
 }
 
 // Getters

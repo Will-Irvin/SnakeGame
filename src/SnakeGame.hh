@@ -69,6 +69,7 @@ class SnakeGame {
 		bool placeApple();
 		void addFreeSpace(int, int);
 		void deleteFreeSpace(int, int);
+		inline bool coordsEqual(std::pair<int, int>, std::pair<int, int>);
 
 		// Helper methods to access the grid
 		inline Spaces getCell(int, int);
