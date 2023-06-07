@@ -69,6 +69,9 @@ void SnakeGame::reset() {
 	if (_grid != NULL) {
 		free(_grid);
 		_freeCells.clear();
+		while (!_path.empty()) {
+			_path.pop();
+		}
 		_grid = NULL;
 		_nRows = 0;
 		_nCols = 0;
@@ -76,6 +79,7 @@ void SnakeGame::reset() {
 		_windowHeight = 0;
 		_currLoc = std::pair(-1, -1);
 		_score = -1;
+		_direction = NONE;
 	}
 }
 
@@ -143,6 +147,7 @@ void SnakeGame::render() {
 		}			
 	}
 }
+
 /**
  * Move the body of the snake based on the current direction
  * Adjust the grid, score, queue, and other feature appropriately
@@ -152,7 +157,7 @@ void SnakeGame::render() {
  */
 bool SnakeGame::move() {
 	if (!_playing) {
-		return false;
+		return true;
 	}
 	// Adjust position of head
 	if (_direction != NONE) {

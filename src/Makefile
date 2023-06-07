@@ -1,6 +1,6 @@
 CC= g++
 CFLAGS= -g -std=c++17 -Wall -Werror
-LINKER= -lSDL2
+LINKER= -lSDL2 -lSDL2_ttf
 GAME= SnakeGame
 
 all: Main

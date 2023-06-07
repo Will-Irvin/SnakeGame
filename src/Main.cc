@@ -1,14 +1,33 @@
 #include <iostream>
 #include <SDL2/SDL.h>
-#include <time.h>
+#include <SDL2/SDL_ttf.h>
+#include <sstream>
+#include <string>
 
 #include "SnakeGame.hh"
+#include "TextDisplay.hh"
 
+#define FONT_SIZE (20)
+#define INIT_ACCELERATION (0)
+#define INIT_APPLES (1)
+#define INIT_GRID_DIMENSION (10)
 #define INIT_SCREEN_DIMENSION (800)
-#define INIT_TIME_DELAY (200)
+#define INIT_TIME_DELAY (150)
+
+enum Data {
+	TIME_DELAY,
+	ACCELERATION,
+	G_WIDTH,
+	G_HEIGHT,
+	NUM_APPLES,
+	TOTAL_DATA
+};
 
 // Initialize SDL and its data structures
 bool init(SDL_Window**, SDL_Renderer**);
+
+// Load font, images, and text to display in between games
+bool loadMedia();
 
 // Free memory associated with the game, quit SDL systems
 void closeSDL(SDL_Window*, SDL_Renderer*);
@@ -49,24 +68,48 @@ int main(int argc, char* argv[]) {
 		return false;
 	}
 
-	SnakeGame snakeGame = SnakeGame(renderer);
 
 	srand(SDL_GetTicks());
 
-	snakeGame.init(10, 10, INIT_SCREEN_DIMENSION, INIT_SCREEN_DIMENSION);
 
 	bool quit = false;
 	SDL_Event e;
-	Uint64 timeDelay = INIT_TIME_DELAY;
+
+	// Variables for the snake game and its different attributes
+	SnakeGame snakeGame = SnakeGame(renderer);
+	Uint64 gameData[TOTAL_DATA];
+	gameData[TIME_DELAY] = INIT_TIME_DELAY;
+	gameData[ACCELERATION] = INIT_ACCELERATION;
+	gameData[G_WIDTH] = INIT_GRID_DIMENSION;
+	gameData[G_HEIGHT] = INIT_GRID_DIMENSION;
+	gameData[NUM_APPLES] = INIT_APPLES;
+
+	// Current piece of data being altered
+	//int currIndex = 0;
+
+	int windowWidth = INIT_SCREEN_DIMENSION;
+	int windowHeight = INIT_SCREEN_DIMENSION;
+
+	// Keep track of whether the game just finished or in initialization
+	//bool gameOver = false;
 	while (!quit) {
 		int startTicks = SDL_GetTicks64();
 		while (SDL_PollEvent(&e)) {
 			if (e.type == SDL_QUIT) {
 				quit = true;
+			} else if (e.type == SDL_KEYDOWN) {
+				if (e.key.keysym.sym == SDLK_RETURN && !snakeGame.isPlaying()) {
+					// Get window dimensions before playing
+					SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+					SDL_SetWindowResizable(window, SDL_FALSE);
+					snakeGame.init(gameData[G_WIDTH], gameData[G_HEIGHT], windowWidth, windowHeight);
+				}
 			}
 			snakeGame.handleEvent(e);
 		}
-		snakeGame.move();
+		if (!snakeGame.move()) {
+			snakeGame.reset();
+		}
 		SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
 		SDL_RenderClear(renderer);
 
@@ -76,12 +119,13 @@ int main(int argc, char* argv[]) {
 		int finishTime = SDL_GetTicks64() - startTicks;
 		if (finishTime < 0) continue;
 
-		int sleepTime = timeDelay - finishTime;
+		int sleepTime = gameData[TIME_DELAY] - finishTime;
 		if (snakeGame.isPlaying() && sleepTime > 0) {
 			SDL_Delay(sleepTime);
 		}
 	}
 	closeSDL(window, renderer);
+	snakeGame.reset();
 	window = NULL;
 	renderer = NULL;
 	return 0;
