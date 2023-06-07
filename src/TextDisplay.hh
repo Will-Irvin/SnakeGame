@@ -6,7 +6,7 @@ class TextDisplay {
 	public:
 		TextDisplay(TTF_Font*, SDL_Renderer*);
 		bool loadText(std::string, SDL_Color);
-		void render();
+		void render(int, int);
 
 	private:
 		// SDL data structures used to render text
