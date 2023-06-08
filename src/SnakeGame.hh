@@ -27,7 +27,7 @@ class SnakeGame {
 		
 		// Getters
 		bool isPlaying();
-		int getScore();
+		Uint64 getScore();
 
 		// Methods for testing
 		void print();
@@ -60,7 +60,7 @@ class SnakeGame {
 		// Keep track of the snakes current direction
 		Direction _direction;
 
-		int _score; // Also serves as length of snake
+		Uint64 _score; // Also serves as length of snake
 
 		bool _playing; // Whether the game has started/finished
 		

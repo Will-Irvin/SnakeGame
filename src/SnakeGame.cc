@@ -18,7 +18,7 @@ SnakeGame::SnakeGame(SDL_Renderer* renderer) {
 	_currLoc = std::pair(-1, -1);
 	_direction = NONE;
 
-	_score = -1;
+	_score = 0;
 	_playing = false;
 
 	_renderer = renderer;
@@ -78,7 +78,7 @@ void SnakeGame::reset() {
 		_windowWidth = 0;
 		_windowHeight = 0;
 		_currLoc = std::pair(-1, -1);
-		_score = -1;
+		_score = 0;
 		_direction = NONE;
 	}
 }
@@ -260,7 +260,7 @@ bool SnakeGame::isPlaying() {
 	return _playing;
 }
 
-int SnakeGame::getScore() {
+Uint64 SnakeGame::getScore() {
 	return _score;
 }
 

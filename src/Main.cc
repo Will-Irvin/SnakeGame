@@ -41,6 +41,8 @@ const std::string ACCELERATION_STR = "Acceleration of the snake "
 const std::string G_WIDTH_STR = "Width of the grid: ";
 const std::string G_HEIGHT_STR = "Height of the grid: ";
 const std::string NUM_APPLES_STR = "Number of apples present at one time: ";
+const SDL_Color BLACK = {0, 0, 0, 0xff};
+const SDL_Color RED = {0xff, 0, 0, 0xff};
 
 // Initialize SDL and its data structures
 bool init(SDL_Window**, SDL_Renderer**, TTF_Font**);
@@ -52,7 +54,7 @@ bool initializeText(TextDisplay*, TextDisplay*, Uint64*, TTF_Font*, SDL_Renderer
 void renderInitialization(TextDisplay*, TextDisplay*, int);
 
 // Free memory associated with the game, quit SDL systems
-void closeSDL(SDL_Window*, SDL_Renderer*);
+void closeSDL(SDL_Window*, SDL_Renderer*, TextDisplay*, TextDisplay*);
 
 /**
  * Initialize SDL and TTF functions, load window, renderer, and font into
@@ -104,7 +106,7 @@ bool init(SDL_Window** window_ptr, SDL_Renderer** renderer_ptr, TTF_Font** font_
  * @param gameData An array containing the data that will be displayed/altered
  * @param font The font that will be used when displaying text
  * @param renderer The renderer used to render each of the text images
- * @return Whether the text was successfully loaded or not
+ * @return Whether all of the text was successfully loaded or not
  */
 bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 										Uint64* gameData, TTF_Font* font, SDL_Renderer* renderer) {
@@ -124,48 +126,43 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 		dataText[i] = TextDisplay(font, renderer);
 	}
 
-	SDL_Color regularText = {0, 0, 0, 0xff}; // Black for regular text
-
 	// Load Instructions
 	bool success = true;
 	std::stringstream currStr;
 	currStr << "Adjust each of the values below to your liking before "
 					<< "starting the game";
-	success = success && instructions_ptr->loadText(currStr.str(), regularText);
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
 	instructions_ptr++;
 
 	currStr.str("Use the up and down arrow keys to select which attribute to "
 							"adjust");
-	success = success && instructions_ptr->loadText(currStr.str(), regularText);
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
 	instructions_ptr++;
 
 	currStr.str("Use the left and right arrow keys to adjust the selected value");
-	success = success && instructions_ptr->loadText(currStr.str(), regularText);
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
 	instructions_ptr++;
 
 	currStr.str("");
-	currStr << "Press the \"R\" key to resize the window such that the grid "
+	currStr << "Press the \"R\" key to resize the window so that the grid "
 				  << "will be viewed as " << FORMAT_PIXELS << " pixel squares";
-	success = success && instructions_ptr->loadText(currStr.str(), regularText);
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
 	instructions_ptr++;
 
 	currStr.str("Press return/enter to begin playing. Use the arrow keys or "
 							"\"wasd\" to move");
-	success = success && instructions_ptr->loadText(currStr.str(), regularText);
-
-	// Color for the highlighted/currently selected input
-	SDL_Color highlightColor = {0xff, 0, 0, 0xff};
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
 
 	// Initial highlighted/selected text
 	currStr.str("");
 	currStr << TIME_DELAY_STR << gameData[TIME_DELAY];
-	success = success && dataText[TIME_DELAY].loadText(currStr.str(), highlightColor);
+	success = success && dataText[TIME_DELAY].loadText(currStr.str(), RED);
 
 	// Rest of the text
 	for (int i = 1; i < TOTAL_DATA; i++) {
 		currStr.str("");
 		currStr << DATA_TEXT[i] << gameData[i];
-		success = success && dataText[i].loadText(currStr.str(), regularText);
+		success = success && dataText[i].loadText(currStr.str(), BLACK);
 	}
 
 	return success;
@@ -197,10 +194,17 @@ void renderInitialization(TextDisplay* instructions, TextDisplay* dataText,
 	}
 }
 
-void closeSDL(SDL_Window* window, SDL_Renderer* renderer) {
+void closeSDL(SDL_Window* window, SDL_Renderer* renderer,
+							TextDisplay* instructions, TextDisplay* dataText) {
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
 
+	for (int i = 0; i < INSTRUCTION_LINES; i++) {
+		instructions[i].free();
+	}
+	for (int i = 0; i < TOTAL_DATA; i++) {
+		dataText[i].free();
+	}
 	SDL_Quit();
 }
 		
@@ -243,16 +247,28 @@ int main(int argc, char* argv[]) {
 			if (e.type == SDL_QUIT) {
 				quit = true;
 			} else if (e.type == SDL_KEYDOWN) {
-				if (e.key.keysym.sym == SDLK_RETURN && !snakeGame.isPlaying()) {
-					// Get window dimensions before playing
-					SDL_GetWindowSize(window, &windowWidth, &windowHeight);
-					SDL_SetWindowResizable(window, SDL_FALSE);
-					snakeGame.init(gameData[G_WIDTH], gameData[G_HEIGHT], windowWidth, windowHeight);
+				if (!snakeGame.isPlaying()) {
+					if (e.key.keysym.sym == SDLK_RETURN) {
+						// Get window dimensions before playing
+						SDL_SetWindowResizable(window, SDL_FALSE);
+						snakeGame.init(gameData[G_WIDTH], gameData[G_HEIGHT], windowWidth,
+													 windowHeight);
+					}
 				}
+			} else if (e.type == SDL_WINDOWEVENT && 
+								 (e.window.event == SDL_WINDOWEVENT_RESIZED)) {
+				windowWidth = e.window.data1;
+				windowHeight = e.window.data2;
 			}
 			snakeGame.handleEvent(e);
 		}
 		if (!snakeGame.move()) {
+			if (snakeGame.getScore() > gameData[HIGH_SCORE]) {
+				gameData[HIGH_SCORE] = snakeGame.getScore();
+				std::stringstream highScoreStr;
+				highScoreStr << DATA_TEXT[HIGH_SCORE] << gameData[HIGH_SCORE];
+				dataDisplay[HIGH_SCORE].loadText(highScoreStr.str(), BLACK);
+			}
 			snakeGame.reset();
 		}
 		SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
@@ -278,7 +294,7 @@ int main(int argc, char* argv[]) {
 			SDL_Delay(sleepTime);
 		}
 	}
-	closeSDL(window, renderer);
+	closeSDL(window, renderer, instructions, dataDisplay);
 	snakeGame.reset();
 	window = NULL;
 	renderer = NULL;
