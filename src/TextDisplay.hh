@@ -4,9 +4,15 @@
 
 class TextDisplay {
 	public:
+		TextDisplay();
 		TextDisplay(TTF_Font*, SDL_Renderer*);
 		bool loadText(std::string, SDL_Color);
 		void render(int, int);
+		void free();
+		void setFont(TTF_Font*);
+		void setRenderer(SDL_Renderer*);
+		int getHeight();
+		int getWidth();
 
 	private:
 		// SDL data structures used to render text
