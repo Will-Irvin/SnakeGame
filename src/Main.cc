@@ -15,6 +15,7 @@
 #define INIT_SCREEN_DIMENSION (800)
 #define INIT_TIME_DELAY (150)
 #define INSTRUCTION_LINES (5)
+#define TICKS_FOR_60_FPS (1000 / 60)
 
 enum Data {
 	TIME_DELAY,
@@ -26,14 +27,29 @@ enum Data {
 	TOTAL_DATA
 };
 
+const std::string DATA_TEXT[] = {"Milliseconds between movement: ", 
+											 "Acceleration of the snake (in ms / apple acquired): ",
+											 "Width of the grid: ",
+											 "Height of the grid: ",
+											 "Number of apples present at one time: ",
+											 "High Score: "};
+
+const std::string HIGH_SCORE_STR = "High Score: ";
+const std::string TIME_DELAY_STR = "Milliseconds between movement: ";
+const std::string ACCELERATION_STR = "Acceleration of the snake "
+																		 "(in ms / apple acquired): ";
+const std::string G_WIDTH_STR = "Width of the grid: ";
+const std::string G_HEIGHT_STR = "Height of the grid: ";
+const std::string NUM_APPLES_STR = "Number of apples present at one time: ";
+
 // Initialize SDL and its data structures
 bool init(SDL_Window**, SDL_Renderer**, TTF_Font**);
 
 // Initialize the TextDisplay objects for the different attributes
-bool initializeText();
+bool initializeText(TextDisplay*, TextDisplay*, Uint64*, TTF_Font*, SDL_Renderer*);
 
 // Render the menu displayed before a game starts
-void renderInitialization(TextDisplay*, int);
+void renderInitialization(TextDisplay*, TextDisplay*, int);
 
 // Free memory associated with the game, quit SDL systems
 void closeSDL(SDL_Window*, SDL_Renderer*);
@@ -136,7 +152,22 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 	currStr.str("Press return/enter to begin playing. Use the arrow keys or "
 							"\"wasd\" to move");
 	success = success && instructions_ptr->loadText(currStr.str(), regularText);
-	
+
+	// Color for the highlighted/currently selected input
+	SDL_Color highlightColor = {0xff, 0, 0, 0xff};
+
+	// Initial highlighted/selected text
+	currStr.str("");
+	currStr << TIME_DELAY_STR << gameData[TIME_DELAY];
+	success = success && dataText[TIME_DELAY].loadText(currStr.str(), highlightColor);
+
+	// Rest of the text
+	for (int i = 1; i < TOTAL_DATA; i++) {
+		currStr.str("");
+		currStr << DATA_TEXT[i] << gameData[i];
+		success = success && dataText[i].loadText(currStr.str(), regularText);
+	}
+
 	return success;
 }
 
@@ -147,13 +178,22 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
  													 instructions to the user on how to set up the game
  * @param windowWidth width of the window used to center text
  */
-void renderInitialization(TextDisplay* instructions_ptr,
+void renderInitialization(TextDisplay* instructions, TextDisplay* dataText,
 													int windowWidth) {
 	int y = 0;
-	for (int i = 0; i < INSTRUCTION_LINES; i++) {
-		TextDisplay currInstruction = instructions_ptr[i];
-		currInstruction.render((windowWidth - currInstruction.getWidth()) / 2, y);
-		y += currInstruction.getHeight();
+	for (int i = 0; i < INSTRUCTION_LINES; i++) { // Instructions
+		instructions[i].render((windowWidth - instructions[i].getWidth()) / 2, y);
+		y += instructions[i].getHeight();
+	}
+
+	// High Score
+	dataText[HIGH_SCORE].render((windowWidth - dataText[HIGH_SCORE].getWidth()) / 2, y);
+	y += dataText[HIGH_SCORE].getHeight();
+
+	// Rest of the data
+	for (int i = 0; i < HIGH_SCORE; i++) {
+		dataText[i].render((windowWidth - dataText[i].getWidth()) / 2, y);
+		y += dataText[i].getHeight();
 	}
 }
 
@@ -177,7 +217,9 @@ int main(int argc, char* argv[]) {
 	TextDisplay dataDisplay[TOTAL_DATA];
 	Uint64 gameData[TOTAL_DATA];
 
-	initializeText(instructions, dataDisplay, gameData, font, renderer);
+	if (!initializeText(instructions, dataDisplay, gameData, font, renderer)) {
+		return -1;
+	}
 
 	srand(SDL_GetTicks());
 
@@ -217,7 +259,7 @@ int main(int argc, char* argv[]) {
 		SDL_RenderClear(renderer);
 
 		if (!snakeGame.isPlaying() && !gameOver) {
-			renderInitialization(instructions, windowWidth);
+			renderInitialization(instructions, dataDisplay, windowWidth);
 		}
 
 		snakeGame.render();
@@ -226,8 +268,13 @@ int main(int argc, char* argv[]) {
 		int finishTime = SDL_GetTicks64() - startTicks;
 		if (finishTime < 0) continue;
 
-		int sleepTime = gameData[TIME_DELAY] - finishTime;
-		if (snakeGame.isPlaying() && sleepTime > 0) {
+		int sleepTime;
+		if (snakeGame.isPlaying()) {
+			sleepTime = gameData[TIME_DELAY] - finishTime;
+		} else {
+			sleepTime = TICKS_FOR_60_FPS - finishTime;
+		}
+		if (sleepTime > 0) {
 			SDL_Delay(sleepTime);
 		}
 	}
