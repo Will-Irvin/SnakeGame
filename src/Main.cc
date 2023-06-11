@@ -57,6 +57,10 @@ bool initializeText(TextDisplay*, TextDisplay*, TextDisplay*,
 // Set up game over data before it is rendered to the screen
 bool initializeGameOver(TextDisplay*, TextDisplay*, Uint64, Uint64*);
 
+// Helper methods to load game attribute text for editing/finished editing
+inline void startEditText(TextDisplay*, Uint64*, int);
+inline void endEditText(TextDisplay*, Uint64*, int);
+
 // Render the menu displayed before a game starts
 void renderInitialization(TextDisplay*, TextDisplay*, int);
 
@@ -214,6 +218,32 @@ bool initializeGameOver(TextDisplay* gameOverText, TextDisplay* highScoreText,
 }
 
 /**
+ * Prepare a game attribute to be ready to be edited by loading its text
+ * with the color red
+ * @param dataText array of game attribute text
+ * @param gameData array of game attribute values
+ * @param index The attribute that will be loaded in the arrays
+ */
+inline void startEditText(TextDisplay* dataText, Uint64* gameData, int index) {
+	std::stringstream text;
+	text << DATA_TEXT[index] << gameData[index];
+	dataText[index].loadText(text.str(), RED);
+}
+
+/**
+ * End a game attribute's editing phase by loading its text with the color
+ * black
+ * @param dataText array of game attribute text
+ * @param gameData array of game attribute values
+ * @param index The attribute that will be loaded in the arrays
+ */
+inline void endEditText(TextDisplay* dataText, Uint64* gameData, int index) {
+	std::stringstream text;
+	text << DATA_TEXT[index] << gameData[index];
+	dataText[index].loadText(text.str(), BLACK);
+}
+
+/**
  * Render the screen for setting up the game (allowing user to change
  * attributes before playing)
  * @param instructions_ptr Pointer to TextDisplay object that displays
@@ -336,20 +366,32 @@ int main(int argc, char* argv[]) {
 					}
 				} else if (e.key.keysym.sym == SDLK_UP) { // Move currIndex up
 					if (!snakeGame.isPlaying() && !gameOver) {
-						std::stringstream text;
-						text << DATA_TEXT[currIndex] << gameData[currIndex];
-						dataDisplay[currIndex].loadText(text.str(), BLACK);
+						endEditText(dataDisplay, gameData, currIndex);
 						currIndex--;
 						if (currIndex < 0) {
 							currIndex = NUM_APPLES;
-						} else if (currIndex > NUM_APPLES) {
+						}
+						startEditText(dataDisplay, gameData, currIndex);
+					}
+				} else if (e.key.keysym.sym == SDLK_DOWN) { // Move currIndex down
+					if (!snakeGame.isPlaying() && !gameOver) {
+						endEditText(dataDisplay, gameData, currIndex);
+						currIndex++;
+						if (currIndex > NUM_APPLES) {
 							currIndex = 0;
 						}
-
-						text.str("");
-						text << DATA_TEXT[currIndex] << gameData[currIndex];
-						dataDisplay[currIndex].loadText(text.str(), RED);
+						startEditText(dataDisplay, gameData, currIndex);
 					}
+				} else if (e.key.keysym.sym == SDLK_LEFT) {
+					// TODO: Maybe add an extra method here with extra checks
+					if (gameData[currIndex] != 0) {
+						gameData[currIndex]--;
+					}
+					startEditText(dataDisplay, gameData, currIndex);
+				} else if (e.key.keysym.sym == SDLK_RIGHT) {
+					// TODO: add extra checks
+					gameData[currIndex]++;
+					startEditText(dataDisplay, gameData, currIndex);
 				}
 			} else if (e.type == SDL_WINDOWEVENT && 
 								 (e.window.event == SDL_WINDOWEVENT_RESIZED)) {
