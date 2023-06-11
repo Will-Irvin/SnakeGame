@@ -311,13 +311,14 @@ int main(int argc, char* argv[]) {
 	SnakeGame snakeGame = SnakeGame(renderer);
 
 	// Current piece of data being altered
-	//int currIndex = 0;
+	int currIndex = 0;
 
 	int windowWidth = INIT_SCREEN_DIMENSION;
 	int windowHeight = INIT_SCREEN_DIMENSION;
 
 	// Keep track of whether the game just finished or in initialization
 	bool gameOver = false;
+	// Note whether a new high score was achieved or not in the last round
 	bool newHigh = false;
 	while (!quit) {
 		int startTicks = SDL_GetTicks64();
@@ -332,6 +333,22 @@ int main(int argc, char* argv[]) {
 													 windowHeight);
 					} else if (gameOver) { // Exit game over screen
 						gameOver = false;
+					}
+				} else if (e.key.keysym.sym == SDLK_UP) { // Move currIndex up
+					if (!snakeGame.isPlaying() && !gameOver) {
+						std::stringstream text;
+						text << DATA_TEXT[currIndex] << gameData[currIndex];
+						dataDisplay[currIndex].loadText(text.str(), BLACK);
+						currIndex--;
+						if (currIndex < 0) {
+							currIndex = NUM_APPLES;
+						} else if (currIndex > NUM_APPLES) {
+							currIndex = 0;
+						}
+
+						text.str("");
+						text << DATA_TEXT[currIndex] << gameData[currIndex];
+						dataDisplay[currIndex].loadText(text.str(), RED);
 					}
 				}
 			} else if (e.type == SDL_WINDOWEVENT && 
