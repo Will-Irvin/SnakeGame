@@ -15,6 +15,8 @@
 #define INIT_SCREEN_DIMENSION (800)
 #define INIT_TIME_DELAY (150)
 #define INSTRUCTION_LINES (5)
+#define MAX_WIDTH (100)
+#define MAX_HEIGHT (100)
 #define TICKS_FOR_60_FPS (1000 / 60)
 
 enum Data {
@@ -52,7 +54,7 @@ bool init(SDL_Window**, SDL_Renderer**, TTF_Font**);
 
 // Initialize the TextDisplay objects for the different attributes
 bool initializeText(TextDisplay*, TextDisplay*, TextDisplay*,
-										Uint64*, TTF_Font*, SDL_Renderer*);
+										Uint64*, TTF_Font*, SDL_Renderer*, SDL_Window*);
 
 // Set up game over data before it is rendered to the screen
 bool initializeGameOver(TextDisplay*, TextDisplay*, Uint64, Uint64*);
@@ -60,6 +62,10 @@ bool initializeGameOver(TextDisplay*, TextDisplay*, Uint64, Uint64*);
 // Helper methods to load game attribute text for editing/finished editing
 inline void startEditText(TextDisplay*, Uint64*, int);
 inline void endEditText(TextDisplay*, Uint64*, int);
+
+// Helper methods to check if it is ok to increment/decrement game attributes
+bool checkDecrementAttribute(Uint64*, int, SDL_Window*);
+bool checkIncrementAttribute(Uint64*, int, SDL_Window*);
 
 // Render the menu displayed before a game starts
 void renderInitialization(TextDisplay*, TextDisplay*, int);
@@ -120,11 +126,12 @@ bool init(SDL_Window** window_ptr, SDL_Renderer** renderer_ptr, TTF_Font** font_
  * @param gameData An array containing the data that will be displayed/altered
  * @param font The font that will be used when displaying text
  * @param renderer The renderer used to render each of the text images
+ * @param window Window being rendered to, some attributes will be initialized
  * @return Whether all of the text was successfully loaded or not
  */
 bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 										TextDisplay* gameOverText, Uint64* gameData,
-										TTF_Font* font, SDL_Renderer* renderer) {
+										TTF_Font* font, SDL_Renderer* renderer, SDL_Window* window) {
 	// Initialize data array
 	gameData[TIME_DELAY] = INIT_TIME_DELAY;
 	gameData[ACCELERATION] = INIT_ACCELERATION;
@@ -132,6 +139,9 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 	gameData[G_HEIGHT] = INIT_GRID_DIMENSION;
 	gameData[NUM_APPLES] = INIT_APPLES;
 	gameData[HIGH_SCORE] = 0;
+
+	int min_width = 0;
+	int min_height = 0;
 
 	for (int i = 0; i < INSTRUCTION_LINES; i++) {
 		instructions_ptr[i] = TextDisplay(font, renderer);
@@ -151,26 +161,51 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 	currStr << "Adjust each of the values below to your liking before "
 					<< "starting the game";
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+	if (instructions_ptr->getWidth() > min_width) {
+		min_width = instructions_ptr->getWidth();
+	}
+	min_height += instructions_ptr->getHeight();
+
 	instructions_ptr++;
 
 	currStr.str("Use the up and down arrow keys to select which attribute to "
 							"adjust");
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+	if (instructions_ptr->getWidth() > min_width) {
+		min_width = instructions_ptr->getWidth();
+	}
+	min_height += instructions_ptr->getHeight();
+
 	instructions_ptr++;
 
 	currStr.str("Use the left and right arrow keys to adjust the selected value");
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+	if (instructions_ptr->getWidth() > min_width) {
+		min_width = instructions_ptr->getWidth();
+	}
+	min_height += instructions_ptr->getHeight();
+
 	instructions_ptr++;
 
 	currStr.str("");
 	currStr << "Press the \"R\" key to resize the window so that the grid "
 				  << "will be viewed as " << FORMAT_PIXELS << " pixel squares";
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+	if (instructions_ptr->getWidth() > min_width) {
+		min_width = instructions_ptr->getWidth();
+	}
+	min_height += instructions_ptr->getHeight();
+
 	instructions_ptr++;
 
 	currStr.str("Press return/enter to begin playing. Use the arrow keys or "
 							"\"wasd\" to move");
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+	if (instructions_ptr->getWidth() > min_width) {
+		min_width = instructions_ptr->getWidth();
+	}
+	min_height += instructions_ptr->getHeight();
+
 
 	// Initial highlighted/selected text
 	currStr.str("");
@@ -182,7 +217,13 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 		currStr.str("");
 		currStr << DATA_TEXT[i] << gameData[i];
 		success = success && dataText[i].loadText(currStr.str(), BLACK);
+		if (dataText[i].getWidth() > min_width) {
+			min_width = dataText[i].getWidth();
+		}
+		min_height += dataText[i].getHeight();
 	}
+
+	SDL_SetWindowMinimumSize(window, min_width, min_height);
 
 	// Game over screen
 	success = success && gameOverText[NEW_HIGH].loadText(GAME_OVER_TEXT[NEW_HIGH], BLACK);
@@ -243,6 +284,117 @@ inline void endEditText(TextDisplay* dataText, Uint64* gameData, int index) {
 	dataText[index].loadText(text.str(), BLACK);
 }
 
+/**
+ * Check whether it is safe to decrement the given attribute based on different
+ * conditions
+ * @param gameData array of game attributes
+ * @param index The attibute being checked
+ * @param window Window being rendered to, used in certain checks
+ * @return Whether the value was changed or not
+ */
+bool checkDecrementAttribute(Uint64* gameData, int index, SDL_Window* window) {
+	switch (index) {
+		case TIME_DELAY:
+			if (gameData[index] > 1 && gameData[index] > gameData[ACCELERATION]) {
+				gameData[index]--;
+				return true;
+			}
+			return false;
+		case NUM_APPLES:
+			if (gameData[index] > 1) {
+				gameData[index]--;
+				return true;
+			}
+			return false;
+			break;
+		case ACCELERATION:
+			if (gameData[index] > 0) {
+				gameData[index]--;
+				return true;
+			}
+			return false;
+			break;
+		case G_WIDTH:
+			int width;
+			SDL_GetWindowMinimumSize(window, &width, NULL);
+			gameData[index]--;
+			if ((int) gameData[index] * FORMAT_PIXELS < width &&
+					gameData[index] * gameData[G_HEIGHT] < gameData[NUM_APPLES]) {
+				gameData[index]++;
+				return false;
+			}
+			return true;
+			break;
+		case G_HEIGHT:
+			int height;
+			SDL_GetWindowMinimumSize(window, NULL, &height);
+			gameData[index]--;
+			if ((int) gameData[index] * FORMAT_PIXELS < height &&
+					gameData[index] * gameData[G_WIDTH] < gameData[NUM_APPLES]) {
+				gameData[index]++;
+				return false;
+			}
+			return true;
+			break;
+	}
+	return false;
+}
+
+/**
+ * Check whether it is safe to increment the given attribute based on different
+ * conditions
+ * @param gameData array of game attributes
+ * @param index The attribute being checked
+ * @param window Window beign rendered to, used in certain checks
+ * @return Whether the value was changed or not
+ */
+bool checkIncrementAttribute(Uint64* gameData, int index, SDL_Window* window) {
+	switch (index) {
+		case TIME_DELAY:
+			if (gameData[index] < std::numeric_limits<Uint64>::max()) {
+				gameData[index]++;
+				return true;
+			}
+			return false;
+			break;
+		case ACCELERATION:
+			if (gameData[index] < gameData[TIME_DELAY]) {
+				gameData[index]++;
+				return true;
+			}
+			return false;
+			break;
+		case G_WIDTH:
+			int width;
+			SDL_GetWindowMaximumSize(window, &width, NULL);
+			gameData[index]++;
+			if (gameData[index] > MAX_WIDTH) {
+				gameData[index]--;
+				return false;
+			}
+			return true;
+			break;
+		case G_HEIGHT:
+			int height;
+			SDL_GetWindowMaximumSize(window, NULL, &height);
+			gameData[index]++;
+			if (gameData[index] > MAX_HEIGHT) {
+				gameData[index]--;
+				return false;
+			}
+			return true;
+			break;
+		case NUM_APPLES:
+			gameData[index]++;
+			if (gameData[index] > gameData[G_WIDTH] * gameData[G_HEIGHT] - 1) {
+				gameData[index]--;
+				return false;
+			}
+			return true;
+	}
+	return false;		
+}
+			
 /**
  * Render the screen for setting up the game (allowing user to change
  * attributes before playing)
@@ -328,7 +480,7 @@ int main(int argc, char* argv[]) {
 	Uint64 gameData[TOTAL_DATA];
 
 	if (!initializeText(instructions, dataDisplay, gameOverDisplay, gameData,
-											font, renderer)) {
+											font, renderer, window)) {
 		return -1;
 	}
 
@@ -383,15 +535,13 @@ int main(int argc, char* argv[]) {
 						startEditText(dataDisplay, gameData, currIndex);
 					}
 				} else if (e.key.keysym.sym == SDLK_LEFT) {
-					// TODO: Maybe add an extra method here with extra checks
-					if (gameData[currIndex] != 0) {
-						gameData[currIndex]--;
+					if (checkDecrementAttribute(gameData, currIndex, window)) {
+						startEditText(dataDisplay, gameData, currIndex);
 					}
-					startEditText(dataDisplay, gameData, currIndex);
 				} else if (e.key.keysym.sym == SDLK_RIGHT) {
-					// TODO: add extra checks
-					gameData[currIndex]++;
-					startEditText(dataDisplay, gameData, currIndex);
+					if (checkIncrementAttribute(gameData, currIndex, window)) {
+						startEditText(dataDisplay, gameData, currIndex);
+					}
 				}
 			} else if (e.type == SDL_WINDOWEVENT && 
 								 (e.window.event == SDL_WINDOWEVENT_RESIZED)) {
