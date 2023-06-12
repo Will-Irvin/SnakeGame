@@ -511,8 +511,8 @@ int main(int argc, char* argv[]) {
 				if (e.key.keysym.sym == SDLK_RETURN) {
 					if (!snakeGame.isPlaying() && !gameOver) { // Start game
 						SDL_SetWindowResizable(window, SDL_FALSE);
-						snakeGame.init(gameData[G_WIDTH], gameData[G_HEIGHT], windowWidth,
-													 windowHeight);
+						snakeGame.init(gameData[G_HEIGHT], gameData[G_WIDTH], windowWidth,
+													 windowHeight, gameData[NUM_APPLES]);
 					} else if (gameOver) { // Exit game over screen
 						gameOver = false;
 					}
@@ -534,11 +534,13 @@ int main(int argc, char* argv[]) {
 						}
 						startEditText(dataDisplay, gameData, currIndex);
 					}
-				} else if (e.key.keysym.sym == SDLK_LEFT) {
+				} else if (e.key.keysym.sym == SDLK_LEFT && !snakeGame.isPlaying()
+									 && !gameOver) {
 					if (checkDecrementAttribute(gameData, currIndex, window)) {
 						startEditText(dataDisplay, gameData, currIndex);
 					}
-				} else if (e.key.keysym.sym == SDLK_RIGHT) {
+				} else if (e.key.keysym.sym == SDLK_RIGHT && !snakeGame.isPlaying()
+									 && !gameOver) {
 					if (checkIncrementAttribute(gameData, currIndex, window)) {
 						startEditText(dataDisplay, gameData, currIndex);
 					}
@@ -577,7 +579,9 @@ int main(int argc, char* argv[]) {
 
 		int sleepTime;
 		if (snakeGame.isPlaying()) {
-			sleepTime = gameData[TIME_DELAY] - finishTime;
+			sleepTime = gameData[TIME_DELAY] -
+									gameData[ACCELERATION] * (snakeGame.getScore() - 1) -
+									finishTime;
 		} else {
 			sleepTime = TICKS_FOR_60_FPS - finishTime;
 		}

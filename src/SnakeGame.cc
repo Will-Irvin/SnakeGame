@@ -29,8 +29,12 @@ SnakeGame::SnakeGame(SDL_Renderer* renderer) {
  * Get the rest of the game ready to begin
  * @param nRows: number of rows in the grid of the new game
  * @param nCols: number of columns in the grid of the new game
+ * @param width: width of the window being rendered to
+ * @param height: heigth of the window being rendered to
+ * @param numApples: number of apples initially placed on the board
  */
-void SnakeGame::init(int nRows, int nCols, int width, int height) {
+void SnakeGame::init(int nRows, int nCols, int width, int height,
+										 int numApples) {
 	reset();
 	// Initialize grid, set current location
 	_nRows = nRows;
@@ -53,9 +57,9 @@ void SnakeGame::init(int nRows, int nCols, int width, int height) {
 	deleteFreeSpace(_currLoc.first, _currLoc.second);
 
 	// Set first apple
-	bool firstApple = placeApple();
-	assert(firstApple);
-
+	for (int i = 0; i < numApples; i++) {
+		placeApple();
+	}
 
 	_score = 1;
 	_playing = true;

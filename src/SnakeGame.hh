@@ -19,7 +19,7 @@ enum Direction {
 class SnakeGame {
 	public:
 		SnakeGame(SDL_Renderer* = NULL);
-		void init(int, int, int, int);
+		void init(int, int, int, int, int);
 		void reset();
 		void handleEvent(SDL_Event);
 		void render();
