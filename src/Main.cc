@@ -15,8 +15,8 @@
 #define INIT_SCREEN_DIMENSION (800)
 #define INIT_TIME_DELAY (150)
 #define INSTRUCTION_LINES (5)
-#define MAX_WIDTH (100)
 #define MAX_HEIGHT (100)
+#define MAX_WIDTH (100)
 #define TICKS_FOR_60_FPS (1000 / 60)
 
 enum Data {
@@ -74,7 +74,8 @@ void renderInitialization(TextDisplay*, TextDisplay*, int);
 void renderGameOver(TextDisplay*, TextDisplay*, int, int, bool);
 
 // Free memory associated with the game, quit SDL systems
-void closeSDL(SDL_Window*, SDL_Renderer*, TextDisplay*, TextDisplay*);
+void closeSDL(SDL_Window*, SDL_Renderer*, TTF_Font*, TextDisplay*, TextDisplay*,
+							TextDisplay*);
 
 /**
  * Initialize SDL and TTF functions, load window, renderer, and font into
@@ -451,8 +452,9 @@ void renderGameOver(TextDisplay* gameOverText, TextDisplay* highScoreText,
 														windowHeight - gameOverText[EXIT].getHeight());
 }
 
-void closeSDL(SDL_Window* window, SDL_Renderer* renderer,
-							TextDisplay* instructions, TextDisplay* dataText) {
+void closeSDL(SDL_Window* window, SDL_Renderer* renderer, TTF_Font* font,
+							TextDisplay* instructions, TextDisplay* dataText,
+							TextDisplay* gameOverText) {
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
 
@@ -462,7 +464,11 @@ void closeSDL(SDL_Window* window, SDL_Renderer* renderer,
 	for (int i = 0; i < TOTAL_DATA; i++) {
 		dataText[i].free();
 	}
+	for (int i = 0; i < TOTAL_GAME_OVER; i++) {
+		gameOverText[i].free();
+	}
 	SDL_Quit();
+	TTF_Quit();
 }
 		
 int main(int argc, char* argv[]) {
@@ -589,9 +595,10 @@ int main(int argc, char* argv[]) {
 			SDL_Delay(sleepTime);
 		}
 	}
-	closeSDL(window, renderer, instructions, dataDisplay);
+	closeSDL(window, renderer, font, instructions, dataDisplay, gameOverDisplay);
 	snakeGame.reset();
 	window = NULL;
 	renderer = NULL;
+	font = NULL;
 	return 0;
 }
