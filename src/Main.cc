@@ -8,13 +8,12 @@
 #include "TextDisplay.hh"
 
 #define FONT_SIZE (25)
-#define FORMAT_PIXELS (20)
 #define INIT_ACCELERATION (0)
 #define INIT_APPLES (1)
 #define INIT_GRID_DIMENSION (10)
 #define INIT_SCREEN_DIMENSION (800)
 #define INIT_TIME_DELAY (150)
-#define INSTRUCTION_LINES (5)
+#define INSTRUCTION_LINES (4)
 #define MAX_HEIGHT (100)
 #define MAX_WIDTH (100)
 #define TICKS_FOR_60_FPS (1000 / 60)
@@ -37,6 +36,7 @@ enum GameOver {
 	TOTAL_GAME_OVER
 };
 
+// String constants
 const std::string DATA_TEXT[] = {"Milliseconds between movement: ", 
 											 "Acceleration of the snake (in ms / apple acquired): ",
 											 "Width of the grid: ",
@@ -46,6 +46,8 @@ const std::string DATA_TEXT[] = {"Milliseconds between movement: ",
 const std::string GAME_OVER_TEXT[] = {"New High Score!", "Previous score: ",
 																			"Game Over!", 
 																			"Press \"return\" to go back to the original menu"};
+
+// Reused SDL_Colors
 const SDL_Color BLACK = {0, 0, 0, 0xff};
 const SDL_Color RED = {0xff, 0, 0, 0xff};
 
@@ -91,8 +93,9 @@ bool init(SDL_Window** window_ptr, SDL_Renderer** renderer_ptr, TTF_Font** font_
 		return false;
 	}
 
-	*window_ptr = SDL_CreateWindow("Snake Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-														 INIT_SCREEN_DIMENSION, INIT_SCREEN_DIMENSION, SDL_WINDOW_SHOWN);
+	*window_ptr = SDL_CreateWindow("Customized Snake Game", SDL_WINDOWPOS_UNDEFINED,
+																 SDL_WINDOWPOS_UNDEFINED, INIT_SCREEN_DIMENSION,
+																 INIT_SCREEN_DIMENSION, SDL_WINDOW_SHOWN);
 	if (*window_ptr == NULL) {
 		std::cout << "Unable to create window: " << SDL_GetError() << '\n';
 		return false;
@@ -141,9 +144,6 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 	gameData[NUM_APPLES] = INIT_APPLES;
 	gameData[HIGH_SCORE] = 0;
 
-	int min_width = 0;
-	int min_height = 0;
-
 	for (int i = 0; i < INSTRUCTION_LINES; i++) {
 		instructions_ptr[i] = TextDisplay(font, renderer);
 	}
@@ -162,51 +162,23 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 	currStr << "Adjust each of the values below to your liking before "
 					<< "starting the game";
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
-	if (instructions_ptr->getWidth() > min_width) {
-		min_width = instructions_ptr->getWidth();
-	}
-	min_height += instructions_ptr->getHeight();
 
 	instructions_ptr++;
 
 	currStr.str("Use the up and down arrow keys to select which attribute to "
 							"adjust");
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
-	if (instructions_ptr->getWidth() > min_width) {
-		min_width = instructions_ptr->getWidth();
-	}
-	min_height += instructions_ptr->getHeight();
 
 	instructions_ptr++;
 
 	currStr.str("Use the left and right arrow keys to adjust the selected value");
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
-	if (instructions_ptr->getWidth() > min_width) {
-		min_width = instructions_ptr->getWidth();
-	}
-	min_height += instructions_ptr->getHeight();
-
-	instructions_ptr++;
-
-	currStr.str("");
-	currStr << "Press the \"R\" key to resize the window so that the grid "
-				  << "will be viewed as " << FORMAT_PIXELS << " pixel squares";
-	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
-	if (instructions_ptr->getWidth() > min_width) {
-		min_width = instructions_ptr->getWidth();
-	}
-	min_height += instructions_ptr->getHeight();
 
 	instructions_ptr++;
 
 	currStr.str("Press return/enter to begin playing. Use the arrow keys or "
 							"\"wasd\" to move");
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
-	if (instructions_ptr->getWidth() > min_width) {
-		min_width = instructions_ptr->getWidth();
-	}
-	min_height += instructions_ptr->getHeight();
-
 
 	// Initial highlighted/selected text
 	currStr.str("");
@@ -218,13 +190,7 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 		currStr.str("");
 		currStr << DATA_TEXT[i] << gameData[i];
 		success = success && dataText[i].loadText(currStr.str(), BLACK);
-		if (dataText[i].getWidth() > min_width) {
-			min_width = dataText[i].getWidth();
-		}
-		min_height += dataText[i].getHeight();
 	}
-
-	SDL_SetWindowMinimumSize(window, min_width, min_height);
 
 	// Game over screen
 	success = success && gameOverText[NEW_HIGH].loadText(GAME_OVER_TEXT[NEW_HIGH], BLACK);
@@ -316,22 +282,16 @@ bool checkDecrementAttribute(Uint64* gameData, int index, SDL_Window* window) {
 			return false;
 			break;
 		case G_WIDTH:
-			int width;
-			SDL_GetWindowMinimumSize(window, &width, NULL);
 			gameData[index]--;
-			if ((int) gameData[index] * FORMAT_PIXELS < width &&
-					gameData[index] * gameData[G_HEIGHT] < gameData[NUM_APPLES]) {
+			if (gameData[index] * gameData[G_HEIGHT] < gameData[NUM_APPLES]) {
 				gameData[index]++;
 				return false;
 			}
 			return true;
 			break;
 		case G_HEIGHT:
-			int height;
-			SDL_GetWindowMinimumSize(window, NULL, &height);
 			gameData[index]--;
-			if ((int) gameData[index] * FORMAT_PIXELS < height &&
-					gameData[index] * gameData[G_WIDTH] < gameData[NUM_APPLES]) {
+			if (gameData[index] * gameData[G_WIDTH] < gameData[NUM_APPLES]) {
 				gameData[index]++;
 				return false;
 			}
@@ -366,8 +326,6 @@ bool checkIncrementAttribute(Uint64* gameData, int index, SDL_Window* window) {
 			return false;
 			break;
 		case G_WIDTH:
-			int width;
-			SDL_GetWindowMaximumSize(window, &width, NULL);
 			gameData[index]++;
 			if (gameData[index] > MAX_WIDTH) {
 				gameData[index]--;
@@ -376,8 +334,6 @@ bool checkIncrementAttribute(Uint64* gameData, int index, SDL_Window* window) {
 			return true;
 			break;
 		case G_HEIGHT:
-			int height;
-			SDL_GetWindowMaximumSize(window, NULL, &height);
 			gameData[index]++;
 			if (gameData[index] > MAX_HEIGHT) {
 				gameData[index]--;
@@ -452,11 +408,21 @@ void renderGameOver(TextDisplay* gameOverText, TextDisplay* highScoreText,
 														windowHeight - gameOverText[EXIT].getHeight());
 }
 
+/**
+ * Free any existing memory and quit SDL systems
+ * @param window SDL_Window to be destroyed
+ * @param renderer SDL_Renderer to be destoryed
+ * @param font Font to be destoryed
+ * @param instructions Array of TextDisplay objects to be freed
+ * @param dataText Array of TextDisplay objects to be freed
+ * @param gameOverText Array of TextDisplay objects to be freed
+ */
 void closeSDL(SDL_Window* window, SDL_Renderer* renderer, TTF_Font* font,
 							TextDisplay* instructions, TextDisplay* dataText,
 							TextDisplay* gameOverText) {
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
+	TTF_CloseFont(font);
 
 	for (int i = 0; i < INSTRUCTION_LINES; i++) {
 		instructions[i].free();
@@ -550,7 +516,7 @@ int main(int argc, char* argv[]) {
 					if (checkIncrementAttribute(gameData, currIndex, window)) {
 						startEditText(dataDisplay, gameData, currIndex);
 					}
-				}
+				}			
 			} else if (e.type == SDL_WINDOWEVENT && 
 								 (e.window.event == SDL_WINDOWEVENT_RESIZED)) {
 				windowWidth = e.window.data1;
@@ -564,6 +530,7 @@ int main(int argc, char* argv[]) {
 																	 snakeGame.getScore(), gameData);
 			// Reset game
 			snakeGame.reset();
+			SDL_SetWindowResizable(window, SDL_TRUE);
 			gameOver = true; // Display game over screen
 		}
 
@@ -576,7 +543,6 @@ int main(int argc, char* argv[]) {
 			renderGameOver(gameOverDisplay, &dataDisplay[HIGH_SCORE], windowWidth,
 										 windowHeight, newHigh);
 		}
-
 		snakeGame.render();
 
 		SDL_RenderPresent(renderer);

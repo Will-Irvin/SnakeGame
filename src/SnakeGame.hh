@@ -31,7 +31,6 @@ class SnakeGame {
 
 		// Methods for testing
 		void print();
-		void setDirection(Direction direction);
 
 	private:
 		// Store what is going on at each cell of the grid (apple, blank, etc.)

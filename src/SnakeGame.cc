@@ -117,6 +117,11 @@ void SnakeGame::handleEvent(SDL_Event e) {
 	}
 }
 
+/**
+ * Render the game to the window
+ * Each type of block will be a different color rectangle
+ * A border will be displayed to outline the grid
+ */
 void SnakeGame::render() {
 	if (_playing && _renderer != NULL) {
 		// Rectangle used to render to different portions of the screen
@@ -302,10 +307,6 @@ void SnakeGame::print() {
 		}
 		std::cout << result.str();
 	}
-}
-
-void SnakeGame::setDirection(Direction direction) {
-	_direction = direction;
 }
 
 // Helper method to access particular cell on the grid
