@@ -9,16 +9,16 @@ enum Spaces {
 };
 
 enum Direction {
-	NONE,
-	UP,
 	DOWN,
 	LEFT,
-	RIGHT
+	UP,
+	RIGHT,
+	NONE
 };
 
 class SnakeGame {
 	public:
-		SnakeGame(SDL_Renderer* = NULL);
+		SnakeGame(SDL_Renderer* = NULL, SDL_Texture* = NULL);
 		void init(int, int, int, int, int);
 		void reset();
 		void handleEvent(SDL_Event);
@@ -38,6 +38,9 @@ class SnakeGame {
 
 		// SDL renderer used to display the game
 		SDL_Renderer* _renderer;
+
+		// Texture used to display head
+		SDL_Texture* _texture;
 
 		// Dimensions of the grid
 		int _nRows;

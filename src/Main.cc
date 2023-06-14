@@ -1,5 +1,6 @@
 #include <iostream>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <sstream>
 #include <string>
@@ -52,7 +53,7 @@ const SDL_Color BLACK = {0, 0, 0, 0xff};
 const SDL_Color RED = {0xff, 0, 0, 0xff};
 
 // Initialize SDL and its data structures
-bool init(SDL_Window**, SDL_Renderer**, TTF_Font**);
+bool init(SDL_Window**, SDL_Renderer**, SDL_Texture**, TTF_Font**);
 
 // Initialize the TextDisplay objects for the different attributes
 bool initializeText(TextDisplay*, TextDisplay*, TextDisplay*,
@@ -84,10 +85,12 @@ void closeSDL(SDL_Window*, SDL_Renderer*, TTF_Font*, TextDisplay*, TextDisplay*,
  * the given pointers
  * @param window_ptr Pointer for the SDL_Window that will be used during program
  * @param renderer_ptr Pointer for the renderer that will be used during program
+ * @param texture_ptr Pointer for the texture that will display the head
  * @param font_ptr Pointer for the font that will be used during program
  * @return Whether all of the initialization successfully completed
  */
-bool init(SDL_Window** window_ptr, SDL_Renderer** renderer_ptr, TTF_Font** font_ptr) {
+bool init(SDL_Window** window_ptr, SDL_Renderer** renderer_ptr,
+					SDL_Texture** texture_ptr, TTF_Font** font_ptr) {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		std::cout << "Unable to initialize SDL: " << SDL_GetError() << '\n';
 		return false;
@@ -105,6 +108,29 @@ bool init(SDL_Window** window_ptr, SDL_Renderer** renderer_ptr, TTF_Font** font_
 	if (*renderer_ptr == NULL) {
 		std::cout << "Unable to create renderer: " << SDL_GetError() << '\n';
 		return false;
+	}
+
+	int imgFlags = IMG_INIT_PNG | IMG_INIT_JPG;
+	if (!(IMG_Init(imgFlags) & imgFlags)) {
+		std::cout << "IMG Initialization Error: " << IMG_GetError() << '\n';
+		return false;
+	}
+
+	SDL_Surface* headSurface = IMG_Load("images/snake_head.png");
+	if (headSurface == NULL) {
+		headSurface = IMG_Load("images/snake_head.jpg");
+	}
+	if (headSurface == NULL) {
+		std::cout << "No head image loaded: " << IMG_GetError() << '\n';
+		*texture_ptr = NULL;
+	} else {
+		*texture_ptr = SDL_CreateTextureFromSurface(*renderer_ptr, headSurface);
+		if (*texture_ptr == NULL) {
+			std::cout << "Unable to create surface from texture: "
+								<< SDL_GetError() << '\n';
+			return false;
+		}
+		SDL_FreeSurface(headSurface);
 	}
 
 	if (TTF_Init() == -1) {
@@ -283,7 +309,7 @@ bool checkDecrementAttribute(Uint64* gameData, int index, SDL_Window* window) {
 			break;
 		case G_WIDTH:
 			gameData[index]--;
-			if (gameData[index] * gameData[G_HEIGHT] < gameData[NUM_APPLES]) {
+			if (gameData[index] * gameData[G_HEIGHT] - 1 < gameData[NUM_APPLES]) {
 				gameData[index]++;
 				return false;
 			}
@@ -291,7 +317,7 @@ bool checkDecrementAttribute(Uint64* gameData, int index, SDL_Window* window) {
 			break;
 		case G_HEIGHT:
 			gameData[index]--;
-			if (gameData[index] * gameData[G_WIDTH] < gameData[NUM_APPLES]) {
+			if (gameData[index] * gameData[G_WIDTH] - 1 < gameData[NUM_APPLES]) {
 				gameData[index]++;
 				return false;
 			}
@@ -440,9 +466,10 @@ void closeSDL(SDL_Window* window, SDL_Renderer* renderer, TTF_Font* font,
 int main(int argc, char* argv[]) {
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
+	SDL_Texture* head = NULL;
 	TTF_Font* font = NULL;
 
-	if (!init(&window, &renderer, &font)) {
+	if (!init(&window, &renderer, &head, &font)) {
 		return -1;
 	}
 	
@@ -462,7 +489,7 @@ int main(int argc, char* argv[]) {
 	SDL_Event e;
 
 	// Variables for the snake game and its different attributes
-	SnakeGame snakeGame = SnakeGame(renderer);
+	SnakeGame snakeGame = SnakeGame(renderer, head);
 
 	// Current piece of data being altered
 	int currIndex = 0;

@@ -8,8 +8,10 @@
 
 #include "SnakeGame.hh"
 
+#define RIGHT_ANGLE (90)
+
 // Initialize variables
-SnakeGame::SnakeGame(SDL_Renderer* renderer) {
+SnakeGame::SnakeGame(SDL_Renderer* renderer, SDL_Texture* texture) {
 	_grid = NULL;
 	_nRows = 0;
 	_nCols = 0;
@@ -22,6 +24,7 @@ SnakeGame::SnakeGame(SDL_Renderer* renderer) {
 	_playing = false;
 
 	_renderer = renderer;
+	_texture = texture;
 }
 
 /**
@@ -141,8 +144,13 @@ void SnakeGame::render() {
 					case BLANK: // Black for other spaces
 						SDL_SetRenderDrawColor(_renderer, 0, 0, 0, 0xff);
 						break;
-				}	
-				SDL_RenderFillRect(_renderer, &currSection);
+				}
+				if (_texture != NULL && *(_grid + offset + c) == HEAD) {
+					SDL_RenderCopyEx(_renderer, _texture, NULL, &currSection,
+													 RIGHT_ANGLE * _direction, NULL, SDL_FLIP_NONE);
+				} else {
+					SDL_RenderFillRect(_renderer, &currSection);
+				}
 
 				// Draw gray outline
 				SDL_SetRenderDrawColor(_renderer, 128, 128, 128, 0xff);
