@@ -383,23 +383,25 @@ bool checkIncrementAttribute(Uint64* gameData, int index, SDL_Window* window) {
  * attributes before playing)
  * @param instructions_ptr Pointer to TextDisplay object that displays
  													 instructions to the user on how to set up the game
- * @param windowWidth width of the window used to center text
+ * @param renderer Used to learn the width of the window to center text
  */
 void renderInitialization(TextDisplay* instructions, TextDisplay* dataText,
-													int windowWidth) {
+													SDL_Renderer* renderer) {
+	SDL_Rect viewport;
+	SDL_RenderGetViewport(renderer, &viewport);
 	int y = 0;
 	for (int i = 0; i < INSTRUCTION_LINES; i++) { // Instructions
-		instructions[i].render((windowWidth - instructions[i].getWidth()) / 2, y);
+		instructions[i].render((viewport.w - instructions[i].getWidth()) / 2, y);
 		y += instructions[i].getHeight();
 	}
 
 	// High Score
-	dataText[HIGH_SCORE].render((windowWidth - dataText[HIGH_SCORE].getWidth()) / 2, y);
+	dataText[HIGH_SCORE].render((viewport.w - dataText[HIGH_SCORE].getWidth()) / 2, y);
 	y += dataText[HIGH_SCORE].getHeight();
 
 	// Rest of the data
 	for (int i = 0; i < HIGH_SCORE; i++) {
-		dataText[i].render((windowWidth - dataText[i].getWidth()) / 2, y);
+		dataText[i].render((viewport.w - dataText[i].getWidth()) / 2, y);
 		y += dataText[i].getHeight();
 	}
 }
@@ -408,30 +410,32 @@ void renderInitialization(TextDisplay* instructions, TextDisplay* dataText,
  * Render the game over screen to the window
  * @param gameOverText array of text specifically for the game over screen
  * @param highScoreText Pointer to object displaying the high score text
- * @param windowWidth Width of the window being rendered to
- * @param windowHieght Heigth of the window being rendered to
+ * @param renderer Used to know height and width of space
  * @param newHigh whether a new high score was achieved or not
  */
 void renderGameOver(TextDisplay* gameOverText, TextDisplay* highScoreText,
-										int windowWidth, int windowHeight, bool newHigh) {
+										SDL_Renderer* renderer, bool newHigh) {
+	SDL_Rect viewport;
+	SDL_RenderGetViewport(renderer, &viewport);
+
 	int y = 0;
 
-	gameOverText[GAME_OVER].render((windowWidth -
+	gameOverText[GAME_OVER].render((viewport.w -
 																 gameOverText[GAME_OVER].getWidth()) / 2, y);
 	y += gameOverText[GAME_OVER].getHeight();
 	if (newHigh) {
-		gameOverText[NEW_HIGH].render((windowWidth -
+		gameOverText[NEW_HIGH].render((viewport.w -
 																	 gameOverText[NEW_HIGH].getWidth()) / 2, y);
 		y += gameOverText[NEW_HIGH].getHeight();
 	}
-	highScoreText->render((windowWidth - highScoreText->getWidth()) / 2, y);
+	highScoreText->render((viewport.w - highScoreText->getWidth()) / 2, y);
 	y += highScoreText->getHeight();
 
-	gameOverText[LAST_SCORE].render((windowWidth -
+	gameOverText[LAST_SCORE].render((viewport.w -
 																		gameOverText[LAST_SCORE].getWidth()) / 2,
 																		y);
-	gameOverText[EXIT].render((windowWidth - gameOverText[EXIT].getWidth()) / 2,
-														windowHeight - gameOverText[EXIT].getHeight());
+	gameOverText[EXIT].render((viewport.w - gameOverText[EXIT].getWidth()) / 2,
+														viewport.h - gameOverText[EXIT].getHeight());
 }
 
 /**
@@ -472,7 +476,7 @@ int main(int argc, char* argv[]) {
 	if (!init(&window, &renderer, &head, &font)) {
 		return -1;
 	}
-	
+
 	TextDisplay instructions[INSTRUCTION_LINES];
 	TextDisplay dataDisplay[TOTAL_DATA];
 	TextDisplay gameOverDisplay[TOTAL_GAME_OVER];
@@ -494,9 +498,6 @@ int main(int argc, char* argv[]) {
 	// Current piece of data being altered
 	int currIndex = 0;
 
-	int windowWidth = INIT_SCREEN_DIMENSION;
-	int windowHeight = INIT_SCREEN_DIMENSION;
-
 	// Keep track of whether the game just finished or in initialization
 	bool gameOver = false;
 	// Note whether a new high score was achieved or not in the last round
@@ -510,8 +511,8 @@ int main(int argc, char* argv[]) {
 				if (e.key.keysym.sym == SDLK_RETURN) {
 					if (!snakeGame.isPlaying() && !gameOver) { // Start game
 						SDL_SetWindowResizable(window, SDL_FALSE);
-						snakeGame.init(gameData[G_HEIGHT], gameData[G_WIDTH], windowWidth,
-													 windowHeight, gameData[NUM_APPLES]);
+						snakeGame.init(gameData[G_HEIGHT], gameData[G_WIDTH],
+													 gameData[NUM_APPLES]);
 					} else if (gameOver) { // Exit game over screen
 						gameOver = false;
 					}
@@ -544,10 +545,6 @@ int main(int argc, char* argv[]) {
 						startEditText(dataDisplay, gameData, currIndex);
 					}
 				}			
-			} else if (e.type == SDL_WINDOWEVENT && 
-								 (e.window.event == SDL_WINDOWEVENT_RESIZED)) {
-				windowWidth = e.window.data1;
-				windowHeight = e.window.data2;
 			}
 			snakeGame.handleEvent(e);
 		}
@@ -565,10 +562,10 @@ int main(int argc, char* argv[]) {
 		SDL_RenderClear(renderer);
 
 		if (!snakeGame.isPlaying() && !gameOver) { // Initialization
-			renderInitialization(instructions, dataDisplay, windowWidth);
+			renderInitialization(instructions, dataDisplay, renderer);
 		} else if (gameOver) { // Game over screen
-			renderGameOver(gameOverDisplay, &dataDisplay[HIGH_SCORE], windowWidth,
-										 windowHeight, newHigh);
+			renderGameOver(gameOverDisplay, &dataDisplay[HIGH_SCORE], renderer,
+										 newHigh);
 		}
 		snakeGame.render();
 

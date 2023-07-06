@@ -19,7 +19,7 @@ enum Direction {
 class SnakeGame {
 	public:
 		SnakeGame(SDL_Renderer* = NULL, SDL_Texture* = NULL);
-		void init(int, int, int, int, int);
+		void init(int, int, int);
 		void reset();
 		void handleEvent(SDL_Event);
 		void render();
@@ -45,9 +45,6 @@ class SnakeGame {
 		// Dimensions of the grid
 		int _nRows;
 		int _nCols;
-		// Dimensions of the window
-		int _windowWidth;
-		int _windowHeight;
 
 		// Current location in the grid
 		std::pair<int, int> _currLoc;

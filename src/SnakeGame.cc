@@ -15,8 +15,6 @@ SnakeGame::SnakeGame(SDL_Renderer* renderer, SDL_Texture* texture) {
 	_grid = NULL;
 	_nRows = 0;
 	_nCols = 0;
-	_windowWidth = 0;
-	_windowHeight = 0;
 	_currLoc = std::pair(-1, -1);
 	_direction = NONE;
 
@@ -32,18 +30,13 @@ SnakeGame::SnakeGame(SDL_Renderer* renderer, SDL_Texture* texture) {
  * Get the rest of the game ready to begin
  * @param nRows: number of rows in the grid of the new game
  * @param nCols: number of columns in the grid of the new game
- * @param width: width of the window being rendered to
- * @param height: heigth of the window being rendered to
  * @param numApples: number of apples initially placed on the board
  */
-void SnakeGame::init(int nRows, int nCols, int width, int height,
-										 int numApples) {
+void SnakeGame::init(int nRows, int nCols, int numApples) {
 	reset();
 	// Initialize grid, set current location
 	_nRows = nRows;
 	_nCols = nCols;
-	_windowWidth = width;
-	_windowHeight = height;
 	_grid = (Spaces *) malloc(_nRows * _nCols * sizeof(Spaces));
 	_currLoc.first = _nRows / 2;
 	_currLoc.second = _nCols / 2;
@@ -82,8 +75,6 @@ void SnakeGame::reset() {
 		_grid = NULL;
 		_nRows = 0;
 		_nCols = 0;
-		_windowWidth = 0;
-		_windowHeight = 0;
 		_currLoc = std::pair(-1, -1);
 		_score = 0;
 		_direction = NONE;
@@ -128,7 +119,9 @@ void SnakeGame::handleEvent(SDL_Event e) {
 void SnakeGame::render() {
 	if (_playing && _renderer != NULL) {
 		// Rectangle used to render to different portions of the screen
-		SDL_Rect currSection = {0, 0, _windowWidth / _nCols, _windowHeight / _nRows};
+		SDL_Rect viewport;
+		SDL_RenderGetViewport(_renderer, &viewport);
+		SDL_Rect currSection = {0, 0, viewport.w / _nCols, viewport.h / _nRows};
 		for (int r = 0; r < _nRows; r++) {
 			int offset = r * _nCols;
 			for (int c = 0; c < _nCols; c++) {
