@@ -14,9 +14,10 @@
 #define INIT_GRID_DIMENSION (10)
 #define INIT_SCREEN_DIMENSION (800)
 #define INIT_TIME_DELAY (150)
-#define INSTRUCTION_LINES (4)
+#define INSTRUCTION_LINES (10)
 #define MAX_HEIGHT (100)
 #define MAX_WIDTH (100)
+#define PRESET_TILE_MULT (80)
 #define TICKS_FOR_60_FPS (1000 / 60)
 
 enum Data {
@@ -200,6 +201,37 @@ bool initializeText(TextDisplay* instructions_ptr, TextDisplay* dataText,
 	currStr.str("Use the left and right arrow keys to adjust the selected value");
 	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
 
+	instructions_ptr++;
+
+	currStr.str("Press the \"R\" key to resize the window so that your grid");
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+
+	instructions_ptr++;
+
+	currStr.str("");
+	currStr	<< "will be made of " << PRESET_TILE_MULT << " pixel squares";
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+
+	instructions_ptr++;
+
+	currStr.str("Note: For very large or very small grids, use the R key on a medium sized");
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+
+	instructions_ptr++;
+
+	currStr.str("grid with dimensions that are common factors to the desired dimensions");
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+
+	instructions_ptr++;
+
+	currStr.str("to allow for square tiles on a regular sized window");
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+
+	instructions_ptr++;
+
+	currStr.str("You can also resize the window yourself before starting the game");
+	success = success && instructions_ptr->loadText(currStr.str(), BLACK);
+	
 	instructions_ptr++;
 
 	currStr.str("Press return/enter to begin playing. Use the arrow keys or "
@@ -544,7 +576,11 @@ int main(int argc, char* argv[]) {
 					if (checkIncrementAttribute(gameData, currIndex, window)) {
 						startEditText(dataDisplay, gameData, currIndex);
 					}
-				}			
+				}	else if (e.key.keysym.sym == SDLK_r && !snakeGame.isPlaying() && !gameOver) {
+					int newWidth = gameData[G_WIDTH] * PRESET_TILE_MULT;
+					int newHeight = gameData[G_HEIGHT] * PRESET_TILE_MULT;
+					SDL_SetWindowSize(window, newWidth, newHeight);
+				}
 			}
 			snakeGame.handleEvent(e);
 		}
